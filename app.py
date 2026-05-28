@@ -84,11 +84,11 @@ div[data-baseweb="popover"] li:hover, div[data-baseweb="popover"] li:hover * {
 
 /* ── HERO KPI CARD ── */
 .hero-kpi-card {
-    background: linear-gradient(135deg, #1B2F4E 0%, #1a3a5c 60%, #1e4976 100%);
+    background: linear-gradient(135deg, #EAF2FB 0%, #ddeaf8 40%, #e8f0fa 70%, #EDF4FD 100%);
     border-radius: 24px;
     padding: 0;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 20px 60px rgba(27,46,78,0.25);
+    border: 1px solid rgba(180,210,240,0.6);
+    box-shadow: 0 8px 40px rgba(52,120,200,0.10), 0 2px 8px rgba(52,120,200,0.06);
     margin-bottom: 28px;
     overflow: hidden;
     display: flex;
@@ -106,31 +106,38 @@ div[data-baseweb="popover"] li:hover, div[data-baseweb="popover"] li:hover * {
 }
 .hero-badge {
     display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(52,152,219,0.18);
-    border: 1px solid rgba(52,152,219,0.35);
+    background: rgba(46,134,193,0.10);
+    border: 1px solid rgba(46,134,193,0.22);
     border-radius: 20px; padding: 4px 12px;
-    font-size: 11px; font-weight: 700; color: #7EC8F0;
+    font-size: 11px; font-weight: 700; color: #2471A3;
     letter-spacing: 0.08em; text-transform: uppercase;
     margin-bottom: 16px; width: fit-content;
 }
 .hero-kpi-title {
-    font-size: 32px; font-weight: 800; color: #FFFFFF;
+    font-size: 32px; font-weight: 800; color: #1B2631;
     line-height: 1.2; margin: 0 0 10px 0;
 }
+.hero-kpi-title span { color: #2E86C1; }
 .hero-kpi-subtitle {
-    font-size: 15px; color: rgba(255,255,255,0.55);
+    font-size: 15px; color: #5D7A96;
     margin: 0 0 24px 0; line-height: 1.5; max-width: 420px;
 }
 .hero-stats { display: flex; gap: 32px; }
 .hero-stat-item { display: flex; flex-direction: column; gap: 2px; }
-.hero-stat-value { font-size: 22px; font-weight: 800; color: #FFFFFF; }
-.hero-stat-label { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
-.hero-stat-divider { width: 1px; background: rgba(255,255,255,0.12); margin: 4px 0; }
+.hero-stat-value { font-size: 22px; font-weight: 800; color: #1B2631; }
+.hero-stat-label { font-size: 11px; color: #7F9DB5; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.hero-stat-divider { width: 1px; background: rgba(46,134,193,0.18); margin: 4px 0; }
 
 .hero-glow {
-    position: absolute; width: 300px; height: 300px;
-    background: radial-gradient(circle, rgba(52,152,219,0.15) 0%, transparent 70%);
-    top: -60px; right: 100px; z-index: 1;
+    position: absolute; width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(180,215,255,0.45) 0%, transparent 68%);
+    top: -80px; right: 60px; z-index: 1;
+    pointer-events: none;
+}
+.hero-glow-2 {
+    position: absolute; width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(147,198,255,0.25) 0%, transparent 70%);
+    bottom: -40px; left: 30%; z-index: 1;
     pointer-events: none;
 }
 
@@ -145,26 +152,27 @@ div[data-baseweb="popover"] li:hover, div[data-baseweb="popover"] li:hover * {
     z-index: 2;
 }
 .visual-chart-wrap {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(180,210,240,0.55);
     border-radius: 18px;
     padding: 20px 22px 16px 22px;
     width: 100%;
     position: relative;
+    box-shadow: 0 4px 20px rgba(52,120,200,0.08);
 }
 .visual-chart-label {
     font-size: 11px; font-weight: 700;
-    color: rgba(255,255,255,0.4);
+    color: #7F9DB5;
     letter-spacing: 0.08em; text-transform: uppercase;
     margin-bottom: 12px;
 }
 .visual-line-svg { width: 100%; height: auto; display: block; }
 .visual-badge-bajo-control {
     display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(34,197,94,0.15);
-    border: 1px solid rgba(34,197,94,0.3);
+    background: rgba(34,197,94,0.10);
+    border: 1px solid rgba(34,197,94,0.25);
     border-radius: 20px; padding: 5px 12px;
-    font-size: 11px; font-weight: 700; color: #4ADE80;
+    font-size: 11px; font-weight: 700; color: #16A34A;
     margin-top: 14px; letter-spacing: 0.04em;
 }
 
@@ -242,15 +250,16 @@ if fase == "Inicio":
     st.markdown("""
     <div class="hero-kpi-card">
         <div class="hero-glow"></div>
+        <div class="hero-glow-2"></div>
         <div class="hero-kpi-content">
             <div class="hero-badge">
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24"
-                     fill="none" stroke="#7EC8F0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                     fill="none" stroke="#2471A3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
                 Plataforma Activa
             </div>
-            <h1 class="hero-kpi-title">Sistema de Control<br>de Calidad</h1>
+            <h1 class="hero-kpi-title">Sistema de <span>Control</span><br>de Calidad</h1>
             <p class="hero-kpi-subtitle">
                 Monitoreo estadístico en tiempo real, análisis de capacidad,
                 planes de muestreo y optimización económica de procesos productivos.
@@ -278,23 +287,23 @@ if fase == "Inicio":
                 <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg" class="visual-line-svg">
                     <defs>
                         <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.3"/>
+                            <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.22"/>
                             <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
                         </linearGradient>
                     </defs>
                     <path d="M0 70 C20 65, 35 50, 50 45 S80 30, 100 28 S140 20, 160 18 S185 15, 200 12 L200 90 L0 90 Z"
                           fill="url(#lineGrad)"/>
                     <path d="M0 70 C20 65, 35 50, 50 45 S80 30, 100 28 S140 20, 160 18 S185 15, 200 12"
-                          fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
-                    <circle cx="50"  cy="45" r="3.5" fill="#3B82F6"/>
-                    <circle cx="100" cy="28" r="3.5" fill="#3B82F6"/>
-                    <circle cx="160" cy="18" r="3.5" fill="#3B82F6"/>
-                    <line x1="0" y1="20" x2="200" y2="20" stroke="rgba(239,68,68,0.5)" stroke-width="1.2" stroke-dasharray="5,4"/>
-                    <line x1="0" y1="75" x2="200" y2="75" stroke="rgba(239,68,68,0.5)" stroke-width="1.2" stroke-dasharray="5,4"/>
+                          fill="none" stroke="#2E86C1" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="50"  cy="45" r="3.5" fill="#2E86C1"/>
+                    <circle cx="100" cy="28" r="3.5" fill="#2E86C1"/>
+                    <circle cx="160" cy="18" r="3.5" fill="#2E86C1"/>
+                    <line x1="0" y1="18" x2="200" y2="18" stroke="rgba(239,68,68,0.35)" stroke-width="1.2" stroke-dasharray="5,4"/>
+                    <line x1="0" y1="76" x2="200" y2="76" stroke="rgba(239,68,68,0.35)" stroke-width="1.2" stroke-dasharray="5,4"/>
                 </svg>
                 <div class="visual-badge-bajo-control">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                         fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                         fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
                     </svg>
                     Proceso Bajo Control
