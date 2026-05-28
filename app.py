@@ -134,44 +134,50 @@ div[data-baseweb="popover"] li:hover * {
 
 .module-card {
     background: #ffffff;
-    border-radius: 18px;
-    padding: 24px 22px 22px 22px;
+    border-radius: 20px;
+    padding: 32px 28px 28px 28px;
     border: 1px solid #E8EEF5;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.055);
-    transition: box-shadow 0.2s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.045);
+    transition: box-shadow 0.2s, transform 0.2s;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 12px;
+    min-height: 170px;
 }
 
 .module-card:hover {
-    box-shadow: 0 8px 28px rgba(52,152,219,0.13);
+    box-shadow: 0 6px 24px rgba(52,152,219,0.12);
+    transform: translateY(-2px);
 }
 
 .module-icon-wrap {
-    width: 48px;
-    height: 48px;
-    border-radius: 13px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.module-icon-wrap svg {
+    display: block;
 }
 
 .module-card-title {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
     color: #1B2631;
     margin: 0;
 }
 
 .module-card-desc {
-    font-size: 13px;
-    color: #7F8C9A;
+    font-size: 13.5px;
+    color: #8A9BB0;
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.55;
 }
 
 /* =====================
@@ -296,63 +302,33 @@ if fase == "Inicio":
     # --- Sección de módulos ---
     st.markdown("<div class='modules-section-title'>Módulos disponibles</div>", unsafe_allow_html=True)
 
+    # SVG icons matching reference image style (Lucide-style, stroke-based)
+    svg_capacidad = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>"""
+    svg_graficos = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>"""
+    svg_estadistica = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16"/><path d="M4 4l4 8-4 8h16"/></svg>"""
+    svg_potencia = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>"""
+    svg_monitoreo = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>"""
+    svg_arl = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>"""
+    svg_muestreo = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>"""
+    svg_economico = """<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>"""
+
     modules = [
-        {
-            "icon": "📊",
-            "bg": "#EBF5FF",
-            "title": "Capacidad",
-            "desc": "Índices Cp, Cpk y análisis de capacidad del proceso.",
-        },
-        {
-            "icon": "📈",
-            "bg": "#E8FFF3",
-            "title": "Gráficos de Control",
-            "desc": "Cartas de control Shewhart en tiempo real.",
-        },
-        {
-            "icon": "∑",
-            "bg": "#F0EEFF",
-            "title": "Estadística",
-            "desc": "Análisis descriptivo y pruebas de normalidad.",
-        },
-        {
-            "icon": "⚡",
-            "bg": "#FFF8E1",
-            "title": "Potencia",
-            "desc": "Análisis de potencia estadística del proceso.",
-        },
-        {
-            "icon": "🔴",
-            "bg": "#FFEEF0",
-            "title": "Monitoreo en Tiempo Real",
-            "desc": "Alertas automáticas con datos en vivo.",
-        },
-        {
-            "icon": "🕐",
-            "bg": "#EEF0FF",
-            "title": "ARL y ATS",
-            "desc": "Average Run Length y análisis de tiempo de señal.",
-        },
-        {
-            "icon": "🗂️",
-            "bg": "#E8F8FF",
-            "title": "Planes de Muestreo",
-            "desc": "Diseño de planes de aceptación por atributos y variables.",
-        },
-        {
-            "icon": "💰",
-            "bg": "#F0FFF4",
-            "title": "Análisis Económico",
-            "desc": "Optimización de peso seteado y análisis de mermas.",
-        },
+        {"icon": svg_capacidad,  "bg": "#EBF4FF", "color": "#3B82F6", "title": "Capacidad",             "desc": "Índices Cp, Cpk y análisis de capacidad del proceso."},
+        {"icon": svg_graficos,   "bg": "#ECFDF5", "color": "#10B981", "title": "Gráficos de Control",   "desc": "Cartas de control Shewhart en tiempo real."},
+        {"icon": svg_estadistica,"bg": "#F5F3FF", "color": "#8B5CF6", "title": "Estadística",           "desc": "Análisis descriptivo y pruebas de normalidad."},
+        {"icon": svg_potencia,   "bg": "#FFFBEB", "color": "#F59E0B", "title": "Potencia",              "desc": "Análisis de potencia estadística del proceso."},
+        {"icon": svg_monitoreo,  "bg": "#FEF2F2", "color": "#EF4444", "title": "Monitoreo en Tiempo Real","desc": "Alertas automáticas con datos en vivo."},
+        {"icon": svg_arl,        "bg": "#EEF2FF", "color": "#6366F1", "title": "ARL y ATS",             "desc": "Average Run Length y análisis de tiempo de señal."},
+        {"icon": svg_muestreo,   "bg": "#F0F9FF", "color": "#0EA5E9", "title": "Planes de Muestreo",    "desc": "Diseño de planes de aceptación por atributos y variables."},
+        {"icon": svg_economico,  "bg": "#F0FDF4", "color": "#22C55E", "title": "Análisis Económico",    "desc": "Optimización de peso seteado y análisis de mermas."},
     ]
 
-    # Renderizar en grid de 3 columnas
-    num_cols = 3
+    # Renderizar en grid de 2 columnas
+    num_cols = 2
     rows = [modules[i:i+num_cols] for i in range(0, len(modules), num_cols)]
 
     for row in rows:
-        cols = st.columns(num_cols, gap="medium")
+        cols = st.columns(num_cols, gap="large")
         for col, mod in zip(cols, row):
             with col:
                 st.markdown(f"""
@@ -362,11 +338,7 @@ if fase == "Inicio":
                     <p class="module-card-desc">{mod['desc']}</p>
                 </div>
                 """, unsafe_allow_html=True)
-
-    # Llenar la última fila si hay módulos sobrantes (celdas vacías)
-    remainder = len(modules) % num_cols
-    if remainder != 0:
-        pass  # st.columns ya maneja esto correctamente arriba
+        st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("""
