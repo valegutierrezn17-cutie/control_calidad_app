@@ -32,7 +32,7 @@ from modules.plan_economico.economico import render_modulo_economico
 # =========================
 # CONFIGURACIÓN
 # =========================
-st.set_page_config(layout="wide", page_title="Sistema Control de Calidad")
+st.set_page_config(layout="wide", page_title="PRO-STATS | Sistema Control de Calidad")
 
 st.markdown("""
 <style>
@@ -111,10 +111,32 @@ elif fase == "Planes de Muestreo":
 elif fase == "Análisis Económico (Mermas)":
     menu = st.sidebar.selectbox(" Simulación Financiera:", ["Optimización de Peso Seteado"])
 
-# HEADER
-st.markdown("""<div class="main-title">Sistema de Control de Calidad</div><div class="subtitle">Monitoreo estadístico, análisis de capacidad y simulación avanzada</div>""", unsafe_allow_html=True)
+# ==========================================
+# HEADER MEJORADO (PORTADA PROFESIONAL)
+# ==========================================
+col_logo, col_title = st.columns([1, 5])
 
+with col_logo:
+    st.image("logo2.png", width=110)
+
+with col_title:
+    st.markdown('<h1 style="color: #1B2631; font-family: \'Helvetica Neue\', Arial, sans-serif; margin-bottom: 0px; font-size: 42px; font-weight: 800; padding-top: 5px;">PRO-STATS</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size: 17px; font-style: italic; color: #5D6D7E; font-family: Arial, sans-serif; margin-top: 3px; margin-bottom: 0px;">Monitoreo estadístico de procesos, análisis de capacidad y simulación avanzada</p>', unsafe_allow_html=True)
+
+# Tarjeta informativa y créditos de las integrantes
+st.markdown("""
+<div style="background-color: rgba(255, 255, 255, 0.6); padding: 15px 20px; border-radius: 14px; border-left: 5px solid #3498DB; margin-top: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.01);">
+    <h5 style="margin-top: 0px; margin-bottom: 6px; color: #1B2631; font-family: Arial, sans-serif; font-size: 15px; font-weight: 700;">📌 Panel de Control de Calidad</h5>
+    <p style="margin-bottom: 2px; color: #2C3E50; font-size: 14px;"><b>Desarrollado por:</b> Gabriela Rodríguez & Valeria Gutiérrez</p>
+    <small style="color: #7F8C8D; font-size: 12px;">Universidad del Magdalena · Programa de Ingeniería Industrial · 2026</small>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("---")
+
+# ==========================================
 # CONTENEDOR PRINCIPAL
+# ==========================================
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 
 # ENRUTAMIENTO PRINCIPAL
