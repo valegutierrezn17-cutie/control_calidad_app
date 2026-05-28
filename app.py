@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import sys
 import os
+import json
+from datetime import datetime
 
 # Configuración de ruta robusta para encontrar módulos
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,901 +34,1136 @@ from modules.plan_economico.economico import render_modulo_economico
 # =========================
 # CONFIGURACIÓN
 # =========================
-st.set_page_config(layout="wide", page_title="PRO-STATS | Control Estadístico de Procesos", page_icon="⚙️")
+st.set_page_config(
+    layout="wide",
+    page_title="PRO-STATS | Control Estadístico de Procesos",
+    page_icon="⚙️"
+)
 
+# =========================
+# SESSION STATE: historial de archivos
+# =========================
+if "file_history" not in st.session_state:
+    st.session_state.file_history = []
+
+if "active_module" not in st.session_state:
+    st.session_state.active_module = None
+
+# =========================
+# CSS PRINCIPAL
+# =========================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
 
 /* =====================================================
-   RESET Y BASE
+   RESET Y VARIABLES
    ===================================================== */
-*, *::before, *::after { box-sizing: border-box; }
-
-html, body, .stApp {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
+:root {
+  --bg-page:       #F4F6FA;
+  --bg-card:       #FFFFFF;
+  --bg-sidebar:    #0D1117;
+  --bg-sidebar-2:  #161B22;
+  --border:        #E4E8EF;
+  --border-soft:   #F0F2F7;
+  --text-primary:  #0D1117;
+  --text-secondary:#5C6880;
+  --text-muted:    #9AA3B2;
+  --text-sidebar:  #8B949E;
+  --text-sidebar-active: #F0F6FF;
+  --accent:        #1A6CF6;
+  --accent-2:      #0EA5E9;
+  --accent-hover:  #1558D6;
+  --accent-glow:   rgba(26,108,246,0.15);
+  --accent-bg:     #EEF4FF;
+  --success:       #16A34A;
+  --success-bg:    #F0FDF4;
+  --success-border:#BBF7D0;
+  --warning:       #D97706;
+  --warning-bg:    #FFFBEB;
+  --danger:        #DC2626;
+  --radius-sm:     6px;
+  --radius-md:     10px;
+  --radius-lg:     14px;
+  --radius-xl:     18px;
+  --shadow-xs:     0 1px 3px rgba(0,0,0,0.06);
+  --shadow-sm:     0 2px 8px rgba(0,0,0,0.07);
+  --shadow-md:     0 4px 20px rgba(0,0,0,0.08);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.1);
+  --font:          'DM Sans', sans-serif;
+  --font-mono:     'DM Mono', monospace;
+  --sidebar-w:     248px;
 }
 
-.stApp {
-    background: #F0F4F8 !important;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, .stApp {
+  font-family: var(--font) !important;
+  background: var(--bg-page) !important;
+  color: var(--text-primary) !important;
 }
 
 .main .block-container {
-    padding: 0 !important;
-    max-width: 100% !important;
+  padding: 0 !important;
+  max-width: 100% !important;
 }
+
+/* Ocultar chrome de Streamlit */
+footer { visibility: hidden !important; }
+#MainMenu { visibility: hidden !important; }
+header[data-testid="stHeader"] { display: none !important; }
+.stDeployButton { display: none !important; }
 
 /* =====================================================
-   SIDEBAR - Fondo oscuro degradado
+   SIDEBAR
    ===================================================== */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%) !important;
-    width: 240px !important;
-    min-width: 240px !important;
-    border-right: 1px solid rgba(255,255,255,0.05) !important;
+  background: var(--bg-sidebar) !important;
+  width: var(--sidebar-w) !important;
+  min-width: var(--sidebar-w) !important;
+  border-right: 1px solid rgba(255,255,255,0.04) !important;
 }
 
-section[data-testid="stSidebar"] > div {
-    padding: 0 !important;
-    background: transparent !important;
-}
-
+section[data-testid="stSidebar"] > div,
 section[data-testid="stSidebar"] .block-container {
-    padding: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
 }
 
-/* Logo del sidebar */
+/* Logo */
 section[data-testid="stSidebar"] img {
-    display: block;
-    margin: 24px auto 8px auto;
-    width: 80px !important;
-    height: 80px !important;
-    object-fit: contain;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.15);
+  display: block !important;
+  margin: 28px auto 0 auto !important;
+  width: 52px !important;
+  height: 52px !important;
+  object-fit: contain !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
 }
 
-/* Título del sidebar */
-.sidebar-brand-title {
-    color: #FFFFFF !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    text-align: center !important;
-    padding: 4px 16px 20px 16px !important;
-    letter-spacing: 0.01em;
-    line-height: 1.4;
-}
-
-/* Separador de sección */
-.sidebar-section-label {
-    color: #64748B !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.12em !important;
-    text-transform: uppercase !important;
-    padding: 12px 16px 6px 16px !important;
-    display: block;
-}
-
-/* Textos generales del sidebar */
+/* Textos sidebar */
 section[data-testid="stSidebar"] .stMarkdown p,
 section[data-testid="stSidebar"] .stMarkdown span,
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] label p {
-    color: #CBD5E1 !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 12px !important;
+  color: var(--text-sidebar) !important;
+  font-family: var(--font) !important;
+  font-size: 12px !important;
 }
 
-/* Selectbox del sidebar */
+/* Selectbox sidebar */
 section[data-testid="stSidebar"] div[data-testid="stSelectbox"] {
-    margin: 0 12px 8px 12px !important;
+  margin: 0 12px 4px 12px !important;
 }
 
 section[data-testid="stSidebar"] div[data-baseweb="select"] {
-    background: rgba(255,255,255,0.07) !important;
-    border-radius: 10px !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
+  background: rgba(255,255,255,0.05) !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  transition: border-color 0.2s;
+}
+
+section[data-testid="stSidebar"] div[data-baseweb="select"]:hover {
+  border-color: rgba(255,255,255,0.14) !important;
 }
 
 section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
-    background: transparent !important;
-    border: none !important;
-    color: #F1F5F9 !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    padding: 8px 12px !important;
+  background: transparent !important;
+  border: none !important;
+  color: #E6EDF3 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  font-family: var(--font) !important;
+  padding: 9px 12px !important;
 }
 
 section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
-    fill: #94A3B8 !important;
+  fill: #8B949E !important;
 }
 
-/* Opciones del dropdown */
+/* Dropdown options */
 div[data-baseweb="popover"] ul,
 div[data-baseweb="popover"] li {
-    background: #1E293B !important;
-    color: #F1F5F9 !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 13px !important;
+  background: #1C2128 !important;
+  color: #E6EDF3 !important;
+  font-family: var(--font) !important;
+  font-size: 13px !important;
 }
 
 div[data-baseweb="popover"] li:hover,
 div[data-baseweb="popover"] li:hover * {
-    background: #334155 !important;
-    color: #FFFFFF !important;
+  background: #2D333B !important;
+  color: #FFFFFF !important;
 }
 
-/* Nav items del sidebar (módulos) */
-.sidebar-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 16px;
-    margin: 2px 8px;
-    border-radius: 8px;
-    color: #94A3B8 !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-decoration: none;
+/* Sidebar button */
+section[data-testid="stSidebar"] .stButton > button {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: #8B949E !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-md) !important;
+  padding: 7px 14px !important;
+  box-shadow: none !important;
+  transition: all 0.2s !important;
 }
 
-.sidebar-nav-item:hover {
-    background: rgba(255,255,255,0.07);
-    color: #F1F5F9 !important;
+section[data-testid="stSidebar"] .stButton > button:hover {
+  background: rgba(255,255,255,0.1) !important;
+  color: #E6EDF3 !important;
+  border-color: rgba(255,255,255,0.14) !important;
 }
 
-.sidebar-nav-item.active {
-    background: rgba(37, 99, 235, 0.2);
-    color: #60A5FA !important;
-    font-weight: 600 !important;
+/* Nav items */
+.sb-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  margin: 1px 10px;
+  border-radius: var(--radius-md);
+  color: var(--text-sidebar) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
 }
 
-.sidebar-nav-item .nav-icon {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
+.sb-nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: #C9D1D9 !important;
 }
 
-/* Box de ayuda al fondo del sidebar */
-.sidebar-help-box {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin: 16px 12px 8px 12px;
+.sb-nav-item.active {
+  background: rgba(26,108,246,0.18);
+  color: #79B8FF !important;
+  font-weight: 600 !important;
 }
 
-.sidebar-help-box .help-title {
-    color: #F1F5F9 !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    margin-bottom: 4px;
+.sb-nav-item.active .sb-icon svg { stroke: #79B8FF !important; }
+
+.sb-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.sidebar-help-box .help-text {
-    color: #64748B !important;
-    font-size: 11px !important;
-    line-height: 1.5;
+.sb-nav-item.active .sb-icon { opacity: 1; }
+
+/* Sidebar divider */
+.sb-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.05);
+  margin: 10px 14px;
 }
 
-/* Footer del sidebar */
-.sidebar-footer {
-    color: #475569 !important;
-    font-size: 10px !important;
-    text-align: center;
-    padding: 12px 16px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    margin-top: auto;
+/* Sidebar section label */
+.sb-label {
+  color: #484F58 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  padding: 12px 14px 5px 14px !important;
+  display: block;
+}
+
+/* Sidebar brand */
+.sb-brand {
+  text-align: center;
+  padding: 10px 16px 20px 16px;
+}
+
+.sb-brand-name {
+  color: #E6EDF3 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.sb-brand-tagline {
+  color: #484F58 !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Sidebar footer */
+.sb-footer {
+  color: #30363D !important;
+  font-size: 10px !important;
+  text-align: center;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  line-height: 1.6;
+}
+
+/* Sidebar help box */
+.sb-help {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  margin: 12px 12px 8px 12px;
+}
+
+.sb-help-title {
+  color: #8B949E !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin-bottom: 3px;
+}
+
+.sb-help-text {
+  color: #484F58 !important;
+  font-size: 11px !important;
+  line-height: 1.5;
 }
 
 /* =====================================================
-   TOPBAR / NAVBAR SUPERIOR
+   TOPBAR
    ===================================================== */
 .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 16px;
-    padding: 12px 32px;
-    background: #FFFFFF;
-    border-bottom: 1px solid #E2E8F0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 58px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.topbar-icon-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    font-size: 16px;
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.topbar-breadcrumb .crumb-active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.topbar-breadcrumb svg { opacity: 0.4; }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s;
+  color: var(--text-secondary);
+}
+
+.topbar-btn:hover {
+  background: var(--border-soft);
+  border-color: var(--border);
+  color: var(--text-primary);
 }
 
 .topbar-badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    background: #2563EB;
-    color: white;
-    font-size: 9px;
-    font-weight: 700;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid white;
+  position: absolute;
+  top: -2px; right: -2px;
+  background: var(--accent);
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid white;
+  font-family: var(--font);
 }
 
 .topbar-user {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 20px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.18s;
 }
 
-.topbar-user-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #2563EB, #7C3AED);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    font-weight: 700;
+.topbar-user:hover { border-color: var(--accent); }
+
+.topbar-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, #7C3AED 100%);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 11px; font-weight: 700;
 }
 
-.topbar-user-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1E293B;
+.topbar-username { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.topbar-role { font-size: 10px; color: var(--text-muted); }
+
+.topbar-separator {
+  width: 1px; height: 20px;
+  background: var(--border);
+  margin: 0 4px;
 }
 
 /* =====================================================
-   HERO SECTION
+   HERO / PAGE HEADER
    ===================================================== */
-.hero-section {
-    background: #FFFFFF;
-    border-radius: 16px;
-    border: 1px solid #E2E8F0;
-    padding: 36px 40px;
-    margin: 24px 24px 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 32px;
-    position: relative;
-    overflow: hidden;
+.page-header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 32px 20px 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 40%;
-    height: 100%;
-    background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-    z-index: 0;
-    border-radius: 0 16px 16px 0;
+.page-header-left {}
+
+.page-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
-.hero-content {
-    position: relative;
-    z-index: 1;
-    flex: 1;
+.eyebrow-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--accent-bg);
+  border: 1px solid rgba(26,108,246,0.15);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.hero-title {
-    font-size: 32px !important;
-    font-weight: 800 !important;
-    color: #0F172A !important;
-    line-height: 1.2 !important;
-    margin-bottom: 8px !important;
+.page-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  line-height: 1.2 !important;
+  margin-bottom: 4px !important;
 }
 
-.hero-title span {
-    color: #2563EB !important;
+.page-desc {
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
 }
 
-.hero-subtitle {
-    font-size: 15px !important;
-    color: #64748B !important;
-    line-height: 1.6 !important;
-    margin-bottom: 24px !important;
+.page-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-.hero-buttons {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22C55E;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
 }
 
 .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background: #2563EB;
-    color: white !important;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: white !important;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(26,108,246,0.25);
 }
 
-.btn-primary:hover { background: #1D4ED8; }
-
-.btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background: white;
-    color: #1E293B !important;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    border: 1.5px solid #CBD5E1;
-    cursor: pointer;
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 16px rgba(26,108,246,0.3);
 }
 
-.hero-visual {
-    position: relative;
-    z-index: 1;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: white;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  text-decoration: none;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.18s;
 }
 
-.hero-chart-mockup {
-    width: 200px;
-    height: 130px;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #E2E8F0;
-    padding: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent) !important; }
 
-.hero-chart-mockup .bar {
-    flex: 1;
-    border-radius: 4px 4px 0 0;
-    background: linear-gradient(180deg, #3B82F6, #2563EB);
-    opacity: 0.8;
-}
-
-.hero-status-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    background: #F0FDF4;
-    border: 1px solid #BBF7D0;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #16A34A;
-    white-space: nowrap;
-}
-
-.hero-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #22C55E;
-    animation: pulse-green 2s infinite;
-}
-
-@keyframes pulse-green {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.3); }
+/* =====================================================
+   CONTENT AREA
+   ===================================================== */
+.content-area {
+  padding: 24px 32px 32px 32px;
 }
 
 /* =====================================================
-   ÁREA DE CARGA Y MÓDULOS
+   CARDS
    ===================================================== */
-.content-area {
-    padding: 20px 24px 24px 24px;
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-xs);
 }
 
-/* Card genérica */
-.card {
-    background: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #E2E8F0;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+.card-sm {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-xs);
 }
 
 .card-title {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    color: #0F172A !important;
-    margin-bottom: 4px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 3px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
 }
 
 .card-subtitle {
-    font-size: 13px !important;
-    color: #64748B !important;
-    margin-bottom: 0 !important;
+  font-size: 12px !important;
+  color: var(--text-secondary) !important;
+  margin: 0 !important;
+  line-height: 1.5 !important;
 }
 
 /* Upload card */
-.upload-card {
-    background: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #E2E8F0;
-    padding: 28px 32px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    display: flex;
-    align-items: center;
-    gap: 32px;
+.upload-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-.upload-icon-wrap {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: #EFF6FF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 24px;
-}
-
-.upload-dropzone {
-    flex: 1;
-    border: 2px dashed #CBD5E1;
-    border-radius: 10px;
-    padding: 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s;
-}
-
-.upload-dropzone:hover { border-color: #2563EB; }
-
-.upload-dropzone .drop-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1E293B;
-    margin-bottom: 4px;
-}
-
-.upload-dropzone .drop-label a {
-    color: #2563EB;
-    text-decoration: none;
-}
-
-.upload-dropzone .drop-hint {
-    font-size: 12px;
-    color: #94A3B8;
-}
-
-/* Recent files panel */
-.recent-files-card {
-    background: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #E2E8F0;
-    padding: 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-
-.recent-files-title {
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    color: #0F172A !important;
-    margin-bottom: 14px !important;
-}
-
-.file-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid #F1F5F9;
-}
-
-.file-item:last-child { border-bottom: none; }
-
-.file-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-.file-icon.xlsx { background: #F0FDF4; }
-.file-icon.csv { background: #EFF6FF; }
-
-.file-info .file-name {
-    font-size: 12px;
-    font-weight: 600;
-    color: #1E293B;
-}
-
-.file-info .file-meta {
-    font-size: 11px;
-    color: #94A3B8;
-}
-
-.view-all-link {
-    font-size: 12px;
-    font-weight: 600;
-    color: #2563EB;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 10px;
+.upload-icon {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--accent-bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 
 /* =====================================================
-   MÓDULOS / QUICK ACCESS CARDS
+   ARCHIVOS RECIENTES
+   ===================================================== */
+.files-list {}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s;
+}
+
+.file-row:last-child { border-bottom: none; }
+
+.file-type-badge {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+.badge-xlsx { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+.badge-csv  { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(26,108,246,0.18); }
+.badge-other { background: #FFF7ED; color: #D97706; border: 1px solid #FED7AA; }
+
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+.file-action {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  font-size: 12px;
+}
+
+.file-action:hover { background: var(--bg-page); border-color: var(--border); color: var(--danger); }
+
+/* =====================================================
+   MODULE CARDS GRID
    ===================================================== */
 .section-header {
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    color: #0F172A !important;
-    margin-bottom: 16px !important;
-    margin-top: 4px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 14px !important;
+  margin-top: 0 !important;
 }
 
 .modules-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 14px;
-    margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
-@media (max-width: 1400px) {
-    .modules-grid { grid-template-columns: repeat(3, 1fr); }
+@media (min-width: 1600px) {
+  .modules-grid { grid-template-columns: repeat(6, 1fr); }
 }
 
-@media (max-width: 900px) {
-    .modules-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1100px) {
+  .modules-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-.module-card {
-    background: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #E2E8F0;
-    padding: 18px 16px 14px 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
+.mod-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 20px 18px 16px 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  display: block;
 }
 
-.module-card:hover {
-    border-color: #BFDBFE;
-    box-shadow: 0 4px 16px rgba(37,99,235,0.08);
-    transform: translateY(-2px);
+.mod-card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.module-card .mod-icon {
-    font-size: 28px;
-    margin-bottom: 10px;
-    display: block;
+.mod-card:hover {
+  border-color: rgba(26,108,246,0.25);
+  box-shadow: 0 4px 20px rgba(26,108,246,0.1);
+  transform: translateY(-2px);
 }
 
-.module-card .mod-name {
-    font-size: 13px !important;
-    font-weight: 700 !important;
-    color: #0F172A !important;
-    margin-bottom: 4px !important;
+.mod-card:hover::before { opacity: 1; }
+
+.mod-icon-wrap {
+  width: 38px; height: 38px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+  transition: all 0.2s;
 }
 
-.module-card .mod-desc {
-    font-size: 11px !important;
-    color: #64748B !important;
-    line-height: 1.5 !important;
-    margin-bottom: 10px !important;
+.mod-card:hover .mod-icon-wrap {
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
-.module-card .mod-arrow {
-    font-size: 16px;
-    color: #CBD5E1;
-    display: block;
-    transition: color 0.2s, transform 0.2s;
+.mod-name {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 4px !important;
+  line-height: 1.3 !important;
 }
 
-.module-card:hover .mod-arrow {
-    color: #2563EB;
-    transform: translateX(3px);
+.mod-desc {
+  font-size: 11px !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.55 !important;
+  margin-bottom: 14px !important;
 }
+
+.mod-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.mod-card:hover .mod-arrow {
+  color: var(--accent);
+  gap: 7px;
+}
+
+/* Icon colors per module */
+.icon-blue   { background: var(--accent-bg); color: var(--accent); }
+.icon-teal   { background: #F0FDFA; color: #0D9488; }
+.icon-purple { background: #F5F3FF; color: #7C3AED; }
+.icon-red    { background: #FEF2F2; color: #DC2626; }
+.icon-amber  { background: var(--warning-bg); color: var(--warning); }
+.icon-indigo { background: #EEF2FF; color: #4F46E5; }
+.icon-green  { background: var(--success-bg); color: var(--success); }
 
 /* =====================================================
-   CONSEJO / TIP CARD
+   TIP CARD
    ===================================================== */
-.tip-card {
-    background: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #E2E8F0;
-    padding: 18px 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-
-.tip-icon {
-    font-size: 22px;
-    flex-shrink: 0;
+.tip-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  box-shadow: var(--shadow-xs);
 }
 
 .tip-label {
-    font-size: 13px;
-    font-weight: 700;
-    color: #2563EB;
-    margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
 }
 
 .tip-text {
-    font-size: 13px;
-    color: #475569;
-}
-
-.tip-actions {
-    margin-left: auto;
-    display: flex;
-    gap: 16px;
-    flex-shrink: 0;
-    font-size: 22px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 /* =====================================================
-   MULTISELECT MODERNO
+   STREAMLIT OVERRIDES
    ===================================================== */
+
+/* Multiselect */
 div[data-testid="stMultiSelect"] label p {
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    color: #374151 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font) !important;
 }
 
 div[data-testid="stMultiSelect"] div[data-baseweb="select"] {
-    border-radius: 10px !important;
-    border: 1.5px solid #E2E8F0 !important;
-    background: #FFFFFF !important;
+  border-radius: var(--radius-md) !important;
+  border: 1.5px solid var(--border) !important;
+  background: var(--bg-card) !important;
 }
 
-/* =====================================================
-   INFO / SUCCESS / WARNING / ERROR MESSAGES
-   ===================================================== */
+/* Alert boxes */
 div[data-testid="stAlert"] {
-    border-radius: 10px !important;
-    border-left-width: 4px !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 13px !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font) !important;
+  font-size: 13px !important;
 }
 
-/* =====================================================
-   BOTONES STREAMLIT
-   ===================================================== */
+/* Buttons (global) */
 .stButton > button {
-    border-radius: 8px !important;
-    background: #2563EB !important;
-    color: white !important;
-    font-weight: 600 !important;
-    font-size: 13px !important;
-    border: none !important;
-    padding: 8px 18px !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    transition: background 0.2s !important;
-    box-shadow: 0 2px 8px rgba(37,99,235,0.2) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--accent) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  border: none !important;
+  padding: 8px 18px !important;
+  font-family: var(--font) !important;
+  transition: background 0.2s, box-shadow 0.2s !important;
+  box-shadow: 0 2px 8px rgba(26,108,246,0.2) !important;
 }
 
 .stButton > button:hover {
-    background: #1D4ED8 !important;
+  background: var(--accent-hover) !important;
+  box-shadow: 0 4px 14px rgba(26,108,246,0.3) !important;
 }
 
-/* =====================================================
-   TABS
-   ===================================================== */
+/* Tabs */
 div[data-testid="stTabs"] button {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 13px !important;
+  font-family: var(--font) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
 }
 
-/* =====================================================
-   DATAFRAMES / TABLAS
-   ===================================================== */
+/* DataFrames */
 div[data-testid="stDataFrame"] {
-    border-radius: 10px !important;
-    overflow: hidden !important;
-    border: 1px solid #E2E8F0 !important;
+  border-radius: var(--radius-md) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border) !important;
 }
 
-/* =====================================================
-   INPUTS Y SLIDERS
-   ===================================================== */
+/* Number / Text inputs */
 div[data-testid="stNumberInput"] input,
 div[data-testid="stTextInput"] input {
-    border-radius: 8px !important;
-    border: 1.5px solid #E2E8F0 !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 13px !important;
+  border-radius: var(--radius-md) !important;
+  border: 1.5px solid var(--border) !important;
+  font-family: var(--font) !important;
+  font-size: 13px !important;
+  background: var(--bg-card) !important;
 }
 
-/* =====================================================
-   HEADERS DE STREAMLIT (h1, h2, h3)
-   ===================================================== */
+div[data-testid="stNumberInput"] input:focus,
+div[data-testid="stTextInput"] input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
+}
+
+/* Headings */
 h1, h2, h3, h4 {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-family: var(--font) !important;
 }
 
-/* =====================================================
-   SCROLLBAR CUSTOM
-   ===================================================== */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #F1F5F9; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* Ocultar el "Made with Streamlit" footer */
-footer { visibility: hidden !important; }
-#MainMenu { visibility: hidden !important; }
-header[data-testid="stHeader"] { background: transparent !important; }
+/* File uploader */
+div[data-testid="stFileUploader"] {
+  border-radius: var(--radius-md) !important;
+}
+
+div[data-testid="stFileUploadDropzone"] {
+  border-radius: var(--radius-md) !important;
+  border: 2px dashed var(--border) !important;
+  background: var(--bg-page) !important;
+  transition: border-color 0.2s !important;
+}
+
+div[data-testid="stFileUploadDropzone"]:hover {
+  border-color: var(--accent) !important;
+  background: var(--accent-bg) !important;
+}
+
+/* Select boxes (general) */
+div[data-baseweb="select"] > div {
+  font-family: var(--font) !important;
+  font-size: 13px !important;
+}
+
+/* Metric cards */
+div[data-testid="stMetric"] {
+  background: var(--bg-card) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border) !important;
+  padding: 16px 18px !important;
+  box-shadow: var(--shadow-xs) !important;
+}
+
+div[data-testid="stMetric"] label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font) !important;
+}
+
+div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font) !important;
+}
+
+/* Plotly charts */
+.js-plotly-plot .plotly .modebar { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# =====================================================
-# SIDEBAR
-# =====================================================
-with st.sidebar:
-    # Logo
-    try:
-        st.image("logo2.png", use_container_width=False, width=80)
-    except Exception:
-        st.markdown("<div style='text-align:center;font-size:40px;padding:20px 0 8px 0'>⚙️</div>", unsafe_allow_html=True)
+# =========================
+# SVG ICONS (Lucide-style)
+# =========================
+def icon(name, size=16, cls=""):
+    icons = {
+        "bar-chart": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
+        "trending-up": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+        "sigma": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M18 7H7l-4 5 4 5h11"/><path d="M18 12H7"/></svg>',
+        "activity": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        "zap": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+        "clock": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        "clipboard": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
+        "dollar": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+        "bell": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+        "alert": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><triangle points="10.29 3.86 1.82 18 2 18 22 18 22.18 18 13.71 3.86 10.29 3.86"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        "sun": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+        "chevron-right": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="9 18 15 12 9 6"/></svg>',
+        "upload": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>',
+        "info": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+        "help": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        "file": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',
+        "trash": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>',
+        "settings": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    }
+    return icons.get(name, "")
 
-    st.markdown("<div class='sidebar-brand-title'>Control Estadístico<br>de Procesos</div>", unsafe_allow_html=True)
 
-    # Separador CONFIGURACIÓN
-    st.markdown("<span class='sidebar-section-label'>Configuración</span>", unsafe_allow_html=True)
-
-    fase = st.selectbox(
-        "Entorno:",
-        ["Fase 1", "Fase 2", "Planes de Muestreo", "Análisis Económico (Mermas)"],
-        label_visibility="collapsed"
+# =========================
+# QUICK ACCESS HELPER
+# =========================
+def _quick_access_html():
+    all_mods = [
+        ("Capacidad",                "bar-chart",   "icon-blue",   "Indices Cp, Cpk y analisis de capacidad."),
+        ("Graficos de Control",      "trending-up", "icon-teal",   "Cartas de control en tiempo real."),
+        ("Estadistica",              "sigma",       "icon-purple", "Analisis descriptivo y normalidad."),
+        ("Monitoreo en Tiempo Real", "activity",    "icon-red",    "Alertas automaticas con datos en vivo."),
+        ("Potencia",                 "zap",         "icon-amber",  "Sensibilidad del sistema de monitoreo."),
+        ("ARL y ATS",                "clock",       "icon-indigo", "Calculo de ARL, ATS y desempeno."),
+    ]
+    st.markdown("<div class='section-header'>Acceso rapido a modulos</div>", unsafe_allow_html=True)
+    grid_html = '<div class="modules-grid">'
+    for name, ico, color, desc in all_mods:
+        grid_html += f"""<div class="mod-card">
+          <div class="mod-icon-wrap {color}">{icon(ico, 18)}</div>
+          <div class="mod-name">{name}</div>
+          <div class="mod-desc">{desc}</div>
+          <div class="mod-arrow">{icon("chevron-right", 12)} Ver modulo</div>
+        </div>"""
+    grid_html += "</div>"
+    st.markdown(grid_html, unsafe_allow_html=True)
+    tip_html = (
+        '<div class="tip-strip">'
+        + '<span style="color:var(--accent);flex-shrink:0">' + icon("info", 16) + "</span>"
+        + "<div>"
+        + '<div class="tip-label">Consejo</div>'
+        + '<div class="tip-text">Carga un archivo CSV o Excel para habilitar todos los modulos de analisis.</div>'
+        + "</div></div>"
     )
+    st.markdown(tip_html, unsafe_allow_html=True)
 
-    # Módulos según fase
-    MODULOS = {
-        "Fase 1": ["Capacidad", "Gráficos de Control", "Estadística"],
-        "Fase 2": ["Monitoreo en Tiempo Real", "Potencia", "ARL y ATS"],
-        "Planes de Muestreo": ["Diseño y Planes"],
-        "Análisis Económico (Mermas)": ["Optimización de Peso Seteado"],
-    }
 
-    ICONOS = {
-        "Capacidad": "📊",
-        "Gráficos de Control": "📈",
-        "Estadística": "∑",
-        "Monitoreo en Tiempo Real": "🔴",
-        "Potencia": "⚡",
-        "ARL y ATS": "🕐",
-        "Diseño y Planes": "📋",
-        "Optimización de Peso Seteado": "💰",
-    }
 
-    label_fase = fase.replace("Análisis Económico (Mermas)", "Económico").upper()
-    st.markdown(f"<span class='sidebar-section-label'>Módulos {label_fase[:12]}</span>", unsafe_allow_html=True)
+# =========================
+# SIDEBAR
+# =========================
+MODULOS = {
+    "Fase 1":    ["Capacidad", "Gráficos de Control", "Estadística"],
+    "Fase 2":    ["Monitoreo en Tiempo Real", "Potencia", "ARL y ATS"],
+    "Planes de Muestreo":            ["Diseño y Planes"],
+    "Análisis Económico (Mermas)":   ["Optimización de Peso Seteado"],
+}
 
-    opciones = MODULOS[fase]
-    menu = st.selectbox("Módulo:", opciones, label_visibility="collapsed")
+ICONOS = {
+    "Capacidad":                   "bar-chart",
+    "Gráficos de Control":         "trending-up",
+    "Estadística":                 "sigma",
+    "Monitoreo en Tiempo Real":    "activity",
+    "Potencia":                    "zap",
+    "ARL y ATS":                   "clock",
+    "Diseño y Planes":             "clipboard",
+    "Optimización de Peso Seteado":"dollar",
+}
 
-    # Nav items decorativos
-    for op in opciones:
-        active_class = "active" if op == menu else ""
+ICON_COLORS = {
+    "Capacidad":                   "icon-blue",
+    "Gráficos de Control":         "icon-teal",
+    "Estadística":                 "icon-purple",
+    "Monitoreo en Tiempo Real":    "icon-red",
+    "Potencia":                    "icon-amber",
+    "ARL y ATS":                   "icon-indigo",
+    "Diseño y Planes":             "icon-green",
+    "Optimización de Peso Seteado":"icon-amber",
+}
+
+MOD_DESC = {
+    "Capacidad":                    "Índices Cp, Cpk y análisis de capacidad del proceso.",
+    "Gráficos de Control":          "Cartas de control para monitorear la estabilidad.",
+    "Estadística":                  "Estadística descriptiva y pruebas de normalidad.",
+    "Monitoreo en Tiempo Real":     "Alertas automáticas y monitoreo con datos en vivo.",
+    "Potencia":                     "Evalúa la sensibilidad del sistema de monitoreo.",
+    "ARL y ATS":                    "Calcula ARL, ATS y desempeño temporal del sistema.",
+    "Diseño y Planes":              "Diseño de planes de muestreo de aceptación.",
+    "Optimización de Peso Seteado": "Análisis económico y optimización de mermas.",
+}
+
+with st.sidebar:
+    try:
+        st.image("logo2.png", use_container_width=False, width=52)
+    except Exception:
         st.markdown(
-            f"<div class='sidebar-nav-item {active_class}'>{ICONOS.get(op, '▸')} {op}</div>",
+            f"<div style='text-align:center;padding:28px 0 0 0;color:#79B8FF'>{icon('settings',32)}</div>",
             unsafe_allow_html=True
         )
 
-    # Caja de ayuda
     st.markdown("""
-    <div class="sidebar-help-box">
-        <div class="help-title">¿Necesitas ayuda?</div>
-        <div class="help-text">Consulta la documentación o contacta soporte técnico.</div>
+    <div class="sb-brand">
+        <div class="sb-brand-name">PRO-STATS</div>
+        <div class="sb-brand-tagline">Control Estadístico</div>
+    </div>
+    <div class="sb-divider"></div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<span class='sb-label'>Entorno</span>", unsafe_allow_html=True)
+    fase = st.selectbox("Entorno:", list(MODULOS.keys()), label_visibility="collapsed")
+
+    st.markdown("<div class='sb-divider'></div>", unsafe_allow_html=True)
+
+    opciones = MODULOS[fase]
+    fase_label = fase.replace("Análisis Económico (Mermas)", "Económico")[:14].upper()
+    st.markdown(f"<span class='sb-label'>Módulos</span>", unsafe_allow_html=True)
+
+    menu = st.selectbox("Módulo:", opciones, label_visibility="collapsed")
+
+    for op in opciones:
+        active = "active" if op == menu else ""
+        st.markdown(
+            f"""<div class="sb-nav-item {active}">
+                  <span class="sb-icon">{icon(ICONOS.get(op,'file'))}</span>
+                  {op}
+               </div>""",
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<div class='sb-divider'></div>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="sb-help">
+        <div class="sb-help-title">Documentación</div>
+        <div class="sb-help-text">Consulta guías técnicas y soporte en el portal oficial.</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Botón de ayuda
-    st.button("🔗  Ir a la ayuda", use_container_width=True)
+    st.button(f"Ayuda y soporte", use_container_width=True)
 
-    # Footer
-    st.markdown("<div class='sidebar-footer'>© 2025 PRO-STATS<br>Todos los derechos reservados.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-footer'>© 2025 PRO-STATS<br>Todos los derechos reservados</div>", unsafe_allow_html=True)
 
-# =====================================================
+# =========================
 # TOPBAR
-# =====================================================
-st.markdown("""
+# =========================
+st.markdown(f"""
 <div class="topbar">
-    <div class="topbar-icon-btn">☀️</div>
-    <div class="topbar-icon-btn">
-        🔔
-        <div class="topbar-badge">2</div>
+  <div class="topbar-left">
+    <div class="topbar-breadcrumb">
+      <span>PRO-STATS</span>
+      {icon('chevron-right', 12)}
+      <span>{fase}</span>
+      {icon('chevron-right', 12)}
+      <span class="crumb-active">{menu}</span>
     </div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-btn">{icon('sun', 15)}</div>
+    <div class="topbar-btn">
+      {icon('bell', 15)}
+      <div class="topbar-badge">2</div>
+    </div>
+    <div class="topbar-separator"></div>
     <div class="topbar-user">
-        <div class="topbar-user-avatar">U</div>
-        <span class="topbar-user-name">Usuario</span>
-        <span style="color:#94A3B8;font-size:12px;">▾</span>
+      <div class="topbar-avatar">U</div>
+      <div>
+        <div class="topbar-username">Usuario</div>
+        <div class="topbar-role">Analista</div>
+      </div>
     </div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-# =====================================================
-# HERO SECTION
-# =====================================================
-st.markdown("""
-<div class="hero-section">
-    <div class="hero-content">
-        <div class="hero-title">Sistema de <span>Control<br>de Calidad</span></div>
-        <div class="hero-subtitle">Monitoreo estadístico, análisis de capacidad<br>y simulación avanzada.</div>
-        <div class="hero-buttons">
-            <span class="btn-primary">📊 Comenzar análisis</span>
-            <span class="btn-secondary">📄 Ver reportes</span>
-        </div>
+# =========================
+# PAGE HEADER
+# =========================
+st.markdown(f"""
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-eyebrow">
+      <span class="eyebrow-tag">{fase}</span>
     </div>
-    <div class="hero-visual">
-        <div class="hero-chart-mockup">
-            <div class="bar" style="height:40%"></div>
-            <div class="bar" style="height:65%"></div>
-            <div class="bar" style="height:50%"></div>
-            <div class="bar" style="height:80%"></div>
-            <div class="bar" style="height:55%"></div>
-            <div class="bar" style="height:70%"></div>
-            <div class="bar" style="height:90%"></div>
-            <div class="bar" style="height:60%"></div>
-        </div>
-        <div class="hero-status-badge">
-            <div class="hero-status-dot"></div>
-            Proceso<br>Bajo Control
-        </div>
+    <div class="page-title">{menu}</div>
+    <p class="page-desc">{MOD_DESC.get(menu, "Módulo de análisis estadístico profesional.")}</p>
+  </div>
+  <div class="page-header-right">
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      Sistema activo
     </div>
+    <span class="btn-primary">{icon('bar-chart', 14)} Iniciar análisis</span>
+    <span class="btn-outline">{icon('file', 14)} Exportar</span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-# =====================================================
-# ÁREA DE CONTENIDO PRINCIPAL
-# =====================================================
+# =========================
+# CONTENT
+# =========================
 st.markdown("<div class='content-area'>", unsafe_allow_html=True)
 
-# ─── RUTAS QUE NO NECESITAN DATOS ───
+# ─── MÓDULOS SIN DATOS ───
 if fase == "Planes de Muestreo":
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     render_muestreo_modulo()
@@ -939,52 +1176,87 @@ elif fase == "Análisis Económico (Mermas)":
 
 else:
     # ─── CARGA DE DATOS ───
-    col_upload, col_recent = st.columns([3, 1.2])
+    col_upload, col_recent = st.columns([3, 1.3])
 
     with col_upload:
-        st.markdown("""
+        st.markdown(f"""
         <div class="card">
-            <div class="card-title">📁 Carga de datos</div>
-            <div class="card-subtitle">Sube tu archivo CSV o Excel para comenzar con el análisis del proceso.</div>
+          <div class="upload-header">
+            <div class="upload-icon">{icon('upload', 20)}</div>
+            <div>
+              <div class="card-title">Carga de datos</div>
+              <p class="card-subtitle">Sube tu archivo CSV o Excel para comenzar el análisis del proceso.</p>
+            </div>
+          </div>
         </div>
         """, unsafe_allow_html=True)
 
-        df = load_data()
+        uploaded_file = load_data()
+
+        # Registrar en historial si es nuevo
+        if uploaded_file is not None and hasattr(uploaded_file, 'name'):
+            fname = uploaded_file.name
+            # Evitar duplicados consecutivos
+            existing = [f["name"] for f in st.session_state.file_history]
+            if fname not in existing:
+                ext = fname.rsplit(".", 1)[-1].upper() if "." in fname else "FILE"
+                size_kb = getattr(uploaded_file, "size", 0)
+                size_str = f"{size_kb/1024:.1f} KB" if size_kb < 1024*1024 else f"{size_kb/1024/1024:.1f} MB"
+                st.session_state.file_history.insert(0, {
+                    "name": fname,
+                    "ext": ext,
+                    "size": size_str,
+                    "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                })
+                # Conservar solo los últimos 8
+                st.session_state.file_history = st.session_state.file_history[:8]
+
+        df = uploaded_file
 
     with col_recent:
-        st.markdown("""
-        <div class="recent-files-card">
-            <div class="recent-files-title">📂 Archivos recientes</div>
-            <div class="file-item">
-                <div class="file-icon xlsx">📗</div>
-                <div class="file-info">
-                    <div class="file-name">datos_proceso.xlsx</div>
-                    <div class="file-meta">28/05/2025 • 3.2 MB</div>
-                </div>
-            </div>
-            <div class="file-item">
-                <div class="file-icon csv">📘</div>
-                <div class="file-info">
-                    <div class="file-name">subgrupos_fase1.csv</div>
-                    <div class="file-meta">27/05/2025 • 1.1 MB</div>
-                </div>
-            </div>
-            <div class="file-item">
-                <div class="file-icon xlsx">📗</div>
-                <div class="file-info">
-                    <div class="file-name">mediciones_proceso.xlsx</div>
-                    <div class="file-meta">26/05/2025 • 2.4 MB</div>
-                </div>
-            </div>
-            <a class="view-all-link" href="#">Ver todos los archivos →</a>
+        # Archivos recientes — FUNCIONAL con session_state
+        history = st.session_state.file_history
+        rows_html = ""
+        if history:
+            to_delete = None
+            for i, f in enumerate(history[:5]):
+                ext = f.get("ext", "FILE")
+                badge_cls = "badge-xlsx" if ext in ("XLSX","XLS") else ("badge-csv" if ext == "CSV" else "badge-other")
+                rows_html += f"""
+                <div class="file-row">
+                  <div class="file-type-badge {badge_cls}">{ext}</div>
+                  <div class="file-info">
+                    <div class="file-name">{f['name']}</div>
+                    <div class="file-meta">{f['date']} · {f['size']}</div>
+                  </div>
+                </div>"""
+        else:
+            rows_html = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;text-align:center;">Sin archivos recientes</div>'
+
+        st.markdown(f"""
+        <div class="card-sm">
+          <div class="card-title" style="margin-bottom:12px!important;">
+            {icon('file', 14)} Archivos recientes
+          </div>
+          <div class="files-list">{rows_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
+        # Botón limpiar historial
+        if history:
+            if st.button("Limpiar historial", use_container_width=True):
+                st.session_state.file_history = []
+                st.rerun()
+
+    # ─── ANÁLISIS ───
     if df is not None:
         df = df.apply(pd.to_numeric, errors='coerce').dropna(how='all')
 
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        cols_seleccionadas = st.multiselect("📌 Selecciona las columnas a analizar:", df.select_dtypes(include=['number']).columns)
+        cols_seleccionadas = st.multiselect(
+            "Selecciona las columnas a analizar:",
+            df.select_dtypes(include=['number']).columns
+        )
         st.markdown("</div>", unsafe_allow_html=True)
 
         if cols_seleccionadas:
@@ -1008,115 +1280,11 @@ else:
                     arl_analysis(data_subset)
 
             st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            # Acceso rápido a módulos
-            st.markdown("<div class='section-header'>Acceso rápido a módulos</div>", unsafe_allow_html=True)
-            st.markdown("""
-            <div class="modules-grid">
-                <div class="module-card">
-                    <span class="mod-icon">📊</span>
-                    <div class="mod-name">Capacidad</div>
-                    <div class="mod-desc">Analiza la capacidad del proceso con cartas de control Cp, Cpk y otros índices.</div>
-                    <span class="mod-arrow">→</span>
-                </div>
-                <div class="module-card">
-                    <span class="mod-icon">📈</span>
-                    <div class="mod-name">Gráficos de Control</div>
-                    <div class="mod-desc">Monitorea la estabilidad del proceso con cartas de control en tiempo real.</div>
-                    <span class="mod-arrow">→</span>
-                </div>
-                <div class="module-card">
-                    <span class="mod-icon">∑</span>
-                    <div class="mod-name">Estadística</div>
-                    <div class="mod-desc">Realiza análisis descriptivo y pruebas de normalidad de tus datos.</div>
-                    <span class="mod-arrow">→</span>
-                </div>
-                <div class="module-card">
-                    <span class="mod-icon">🔴</span>
-                    <div class="mod-name">Monitoreo en Tiempo Real</div>
-                    <div class="mod-desc">Monitorea el proceso con datos en tiempo real y recibe alertas automáticas.</div>
-                    <span class="mod-arrow">→</span>
-                </div>
-                <div class="module-card">
-                    <span class="mod-icon">⚡</span>
-                    <div class="mod-name">Potencia</div>
-                    <div class="mod-desc">Evalúa la potencia estadística de tu sistema de monitoreo y sensibilidad.</div>
-                    <span class="mod-arrow">→</span>
-                </div>
-                <div class="module-card">
-                    <span class="mod-icon">🕐</span>
-                    <div class="mod-name">ARL y ATS</div>
-                    <div class="mod-desc">Calcula ARL, ATS y evalúa el desempeño temporal del sistema.</div>
-                    <span class="mod-arrow">→</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
 
-            # Tip card
-            st.markdown("""
-            <div class="tip-card">
-                <span class="tip-icon">ℹ️</span>
-                <div>
-                    <div class="tip-label">Consejo</div>
-                    <div class="tip-text">Mantén tus procesos bajo control y toma decisiones basadas en datos.</div>
-                </div>
-                <div class="tip-actions">🔔 📈 🎯</div>
-            </div>
-            """, unsafe_allow_html=True)
+        else:
+            _quick_access_html()
 
     else:
-        # Acceso rápido a módulos (sin datos cargados)
-        st.markdown("<div class='section-header'>Acceso rápido a módulos</div>", unsafe_allow_html=True)
-        st.markdown("""
-        <div class="modules-grid">
-            <div class="module-card">
-                <span class="mod-icon">📊</span>
-                <div class="mod-name">Capacidad</div>
-                <div class="mod-desc">Analiza la capacidad del proceso con cartas de control Cp, Cpk y otros índices.</div>
-                <span class="mod-arrow">→</span>
-            </div>
-            <div class="module-card">
-                <span class="mod-icon">📈</span>
-                <div class="mod-name">Gráficos de Control</div>
-                <div class="mod-desc">Monitorea la estabilidad del proceso con cartas de control en tiempo real.</div>
-                <span class="mod-arrow">→</span>
-            </div>
-            <div class="module-card">
-                <span class="mod-icon">∑</span>
-                <div class="mod-name">Estadística</div>
-                <div class="mod-desc">Realiza análisis descriptivo y pruebas de normalidad de tus datos.</div>
-                <span class="mod-arrow">→</span>
-            </div>
-            <div class="module-card">
-                <span class="mod-icon">🔴</span>
-                <div class="mod-name">Monitoreo en Tiempo Real</div>
-                <div class="mod-desc">Monitorea el proceso con datos en tiempo real y recibe alertas automáticas.</div>
-                <span class="mod-arrow">→</span>
-            </div>
-            <div class="module-card">
-                <span class="mod-icon">⚡</span>
-                <div class="mod-name">Potencia</div>
-                <div class="mod-desc">Evalúa la potencia estadística de tu sistema de monitoreo y sensibilidad.</div>
-                <span class="mod-arrow">→</span>
-            </div>
-            <div class="module-card">
-                <span class="mod-icon">🕐</span>
-                <div class="mod-name">ARL y ATS</div>
-                <div class="mod-desc">Calcula ARL, ATS y evalúa el desempeño temporal del sistema.</div>
-                <span class="mod-arrow">→</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="tip-card">
-            <span class="tip-icon">ℹ️</span>
-            <div>
-                <div class="tip-label">Consejo</div>
-                <div class="tip-text">Mantén tus procesos bajo control y toma decisiones basadas en datos.</div>
-            </div>
-            <div class="tip-actions">🔔 📈 🎯</div>
-        </div>
-        """, unsafe_allow_html=True)
+        _quick_access_html()
 
 st.markdown("</div>", unsafe_allow_html=True)  # cierre content-area
