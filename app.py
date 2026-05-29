@@ -16,6 +16,8 @@ from modules.fase2.arl import arl_analysis
 from modules.fase2.simulacion import arl_live_simulation
 from planes_muestreo.muestreo_aceptacion import render_muestreo_modulo
 from modules.plan_economico.economico import render_modulo_economico
+# Importación del módulo de reportería formal
+from modules.reporter import generar_reporte_pdf
 
 # ── LEER ARCHIVO DE PLANTILLA FÍSICO ──
 try:
@@ -433,20 +435,90 @@ else:
         cols_seleccionadas = st.multiselect("Selecciona las columnas:", df.select_dtypes(include=['number']).columns)
         if cols_seleccionadas:
             data_subset = df[cols_seleccionadas].copy()
+            
+            # Variables de control para la recopilación de metadatos del reporte
+            titulo_modulo = ""
+            metricas_reporte = {}
+            
             if fase == "Fase 1":
                 if menu == "Capacidad":
                     capability_analysis(data_subset)
+                    titulo_modulo = "Informe de Analisis de Capacidad del Proceso"
+                    metricas_reporte = {
+                        "Entorno Evaluado": "SPC - Fase 1",
+                        "Analisis Ejecutado": "Indices de Capacidad Corto/Largo Plazo",
+                        "Variables": f"{', '.join(cols_seleccionadas)}"
+                    }
                 elif menu == "Gráficos":
                     control_chart_module(data_subset)
+                    titulo_modulo = "Informe de Graficos de Control de Shewhart"
+                    metricas_reporte = {
+                        "Entorno Evaluado": "SPC - Fase 1",
+                        "Analisis Ejecutado": "Cartas de Control por Variables",
+                        "Muestra Total": f"{len(data_subset)} registros"
+                    }
                 elif menu == "Estadística":
                     normality_analysis(data_subset)
+                    titulo_modulo = "Informe de Estadistica Descriptiva y Normalidad"
+                    metricas_reporte = {
+                        "Entorno Evaluado": "SPC - Fase 1",
+                        "Analisis Ejecutado": "Pruebas de Normalidad y Estadisticos Resumen"
+                    }
             elif fase == "Fase 2":
                 if menu == "Monitoreo en Tiempo Real":
                     arl_live_simulation()
+                    titulo_modulo = "Informe de Monitoreo en Tiempo Real"
+                    metricas_reporte = {
+                        "Entorno Evaluado": "SPC - Fase 2",
+                        "Analisis Ejecutado": "Simulacion de Control Activo"
+                    }
                 elif menu == "Potencia":
                     ejecutar_potencia(data_subset)
+                    titulo_modulo = "Informe de Analisis de Potencia Estadistica"
+                    metricas_reporte = {
+                        "Entorno Evaluado": "SPC - Fase 2",
+                        "Analisis Ejecutado": "Curvas de Potencia y Probabilidad de Deteccion"
+                    }
                 elif menu == "ARL":
                     arl_analysis(data_subset)
+                    titulo_modulo = "Informe de Analisis ARL / ATS"
+                    metricas_reporte = {
+                        "Entorno Evaluado": "SPC - Fase 2",
+                        "Analisis Ejecutado": "Longitud de Racha Promedio y Tiempos de Senal"
+                    }
+
+            # ── COMPONENTE UNIFICADO DE EXPORTACIÓN (RÚBRICA DE REPORTES) ──
+            if titulo_modulo:
+                st.markdown("---")
+                with st.expander("📄 Generar Reporte Técnico de Resultados"):
+                    st.markdown("Redacte las observaciones finales y diagnósticos para compilar el informe definitivo.")
+                    
+                    conclusiones = st.text_area(
+                        "Conclusiones y Recomendaciones del Ingeniero:",
+                        placeholder="El proceso se encuentra bajo control estadístico...",
+                        height=120
+                    )
+                    
+                    if st.button("Compilar Documento PDF", type="primary"):
+                        if not conclusiones.strip():
+                            st.warning("Debe ingresar una conclusión o diagnóstico analítico para generar el reporte.")
+                        else:
+                            with st.spinner("Compilando archivo PDF..."):
+                                pdf_bytes = generar_reporte_pdf(
+                                    titulo_modulo=titulo_modulo,
+                                    dataframe=data_subset,
+                                    metricas=metricas_reporte,
+                                    conclusiones_usuario=conclusiones
+                                )
+                                
+                                st.success("Reporte generado exitosamente.")
+                                st.download_button(
+                                    label="Descargar Reporte Formal PDF",
+                                    data=pdf_bytes,
+                                    file_name=f"{titulo_modulo.replace(' ', '_').lower()}.pdf",
+                                    mime="application/pdf",
+                                    use_container_width=True
+                                )
         else:
             st.info("Selecciona columnas para continuar.")
     else:
