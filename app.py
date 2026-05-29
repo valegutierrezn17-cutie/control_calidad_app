@@ -17,6 +17,13 @@ from modules.fase2.simulacion import arl_live_simulation
 from planes_muestreo.muestreo_aceptacion import render_muestreo_modulo
 from modules.plan_economico.economico import render_modulo_economico
 
+# ── LEER ARCHIVO DE PLANTILLA FÍSICO ──
+try:
+    with open("PLANTILLA DATOS.xlsx", "rb") as file:
+        plantilla_bytes = file.read()
+except Exception:
+    plantilla_bytes = None
+
 st.set_page_config(layout="wide", page_title="Sistema Control de Calidad")
 
 st.markdown("""
@@ -408,6 +415,15 @@ else:
             </div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Botón de descarga de la plantilla estructurada física justo debajo de la zona de carga
+        if plantilla_bytes is not None:
+            st.download_button(
+                label="Descargar Plantilla Excel (Estructura de Datos)",
+                data=plantilla_bytes,
+                file_name="PLANTILLA DATOS.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
     st.markdown("<div class='card'>", unsafe_allow_html=True)
 
