@@ -201,10 +201,10 @@ D2_CONSTANTS = {
 
 def clasificar_con_semaforo(Cp, Cpk, Cpu, Cpl):
     es_centrado = abs(Cpu - Cpl) < 0.05
-    if   Cp >= 1.33 and es_centrado:       return "Proceso Capaz y Centrado",          "green"
+    if   Cp >= 1.33 and es_centrado:       return "Proceso Capaz y Centrado",        "green"
     elif Cp >= 1    and not es_centrado:   return "Proceso Capaz pero Descentrado",    "yellow"
     elif Cp < 1     and es_centrado:       return "Proceso Incapaz pero Centrado",     "orange"
-    else:                                  return "Proceso Incapaz y Descentrado",     "red"
+    else:                                  return "Proceso Incapaz y Descentrado",    "red"
 
 def parse_number(x):
     return float(str(x).replace(",", ".").strip())
@@ -337,8 +337,8 @@ def render_stat_panels(media_global, rango_medio, sigma, d2, n,
 
     with col2:
         st.markdown(panel("Límites de especificación", [
-            ("LIE (LSL)",            f"{LSL:.4f}",          None),
-            ("LSE (USL)",            f"{USL:.4f}",          None),
+            ("LIE (LSL)",           f"{LSL:.4f}",          None),
+            ("LSE (USL)",           f"{USL:.4f}",          None),
             ("Tolerancia (USL−LSL)",  f"{(USL-LSL):.4f}",    None),
             ("Subgrupos (m)",        f"{num_muestras}",     None),
         ]), unsafe_allow_html=True)
@@ -625,6 +625,49 @@ def capability_analysis(data_df):
     # ── Reporte ───────────────────────────────
     render_section("Reporte del análisis")
     render_report(Cp, Cpu, Cpl)
+
+    # ── Análisis Inverso (Targeting) ──────────────────────
+    render_section("Análisis Inverso (Targeting)")
+    with st.container():
+        st.markdown(f"""
+        <div style="font-size:12px; color:{C['text_muted']}; margin-bottom:12px; font-family:'IBM Plex Sans',sans-serif;">
+          Calcule la media requerida para cumplir con un porcentaje específico de Producto No Conforme (PNC).
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col_t1, col_t2, col_t3 = st.columns(3)
+        with col_t1:
+            pnc_target = st.number_input("% PNC máximo", min_value=0.0001, max_value=99.0, value=0.13, step=0.01, format="%.4f")
+        with col_t2:
+            limite_target = st.selectbox("Límite a evaluar", ["LSE (Superior)", "LIE (Inferior)"])
+        with col_t3:
+            sigma_target = st.number_input("Sigma (σ)", value=float(sigma), format="%.4f")
+            
+        if st.button("Calcular Media Objetivo"):
+            z_val = norm.ppf(pnc_target / 100)
+            is_lse = "LSE" in limite_target
+            lim_val = USL if is_lse else LSL
+            
+            if is_lse:
+                media_req = lim_val - (z_val * sigma_target)
+            else:
+                media_req = lim_val + (abs(z_val) * sigma_target)
+            
+            st.markdown(f"""
+            <div style="background:{C['bg_panel']};border:1px solid {C['border']};border-left:3px solid {C['blue']};border-radius:10px;padding:15px 20px;margin-top:15px;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:{C['text_muted']};font-family:'IBM Plex Sans',sans-serif;margin-bottom:4px;">
+                        Media Objetivo Calculada
+                    </div>
+                    <div style="font-size:12px;color:{C['text_muted']};font-family:'IBM Plex Sans',sans-serif;">
+                        Para un límite máximo de {pnc_target}% PNC en el {limite_target}
+                    </div>
+                </div>
+                <div style="font-size:24px;font-weight:700;color:{C['blue']};font-family:'JetBrains Mono',monospace;">
+                    {media_req:.4f}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # ── Footer — mantiene tema claro ───────────────────
     st.markdown(f"""
