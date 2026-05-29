@@ -5,5 +5,3 @@ plotly
 scipy
 openpyxl
 kaleido==0.2.1
-fpdf==1.7.2
-reportlab
