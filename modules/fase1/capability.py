@@ -201,10 +201,10 @@ D2_CONSTANTS = {
 
 def clasificar_con_semaforo(Cp, Cpk, Cpu, Cpl):
     es_centrado = abs(Cpu - Cpl) < 0.05
-    if   Cp >= 1.33 and es_centrado:       return "Proceso Capaz y Centrado",          "green"
+    if   Cp >= 1.33 and es_centrado:       return "Proceso Capaz y Centrado",        "green"
     elif Cp >= 1    and not es_centrado:   return "Proceso Capaz pero Descentrado",    "yellow"
     elif Cp < 1     and es_centrado:       return "Proceso Incapaz pero Centrado",     "orange"
-    else:                                  return "Proceso Incapaz y Descentrado",     "red"
+    else:                                  return "Proceso Incapaz y Descentrado",    "red"
 
 def parse_number(x):
     return float(str(x).replace(",", ".").strip())
@@ -337,8 +337,8 @@ def render_stat_panels(media_global, rango_medio, sigma, d2, n,
 
     with col2:
         st.markdown(panel("Límites de especificación", [
-            ("LIE (LSL)",            f"{LSL:.4f}",          None),
-            ("LSE (USL)",            f"{USL:.4f}",          None),
+            ("LIE (LSL)",           f"{LSL:.4f}",          None),
+            ("LSE (USL)",           f"{USL:.4f}",          None),
             ("Tolerancia (USL−LSL)",  f"{(USL-LSL):.4f}",    None),
             ("Subgrupos (m)",        f"{num_muestras}",     None),
         ]), unsafe_allow_html=True)
